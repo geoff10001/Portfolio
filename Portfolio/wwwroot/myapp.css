@@ -7,10 +7,12 @@
 /* Global Variables */
 :root {
     --my-dark-color: black;
-    --my-light-color: black;
+    --my-light-color: white;
     --my-dark-color-faded: rgba(0, 0, 0, 0.7);
     --my-light-color-faded: rgba(255, 255, 255, 1);
-    
+    --my-btn-text-color: white;
+    --my-btn-color: black;
+    --my-btn-border-color: black;
     --my-black-color: black;
     --my-red-color: red;
     --my-white-color: white;
@@ -32,35 +34,78 @@
     --menu-btn-background-color: var(--my-orange-color) !important;
 }
 
-/* under construction - add dark light switch to website*/
-.darkmode {
-    --sidebar-background-color: var(--my-dark-color-faded);
-    --sidebar-box-shadow: 0px 2px 8px 0px var(--my-light-color-faded);
-    --toprow-box-shadow: 6px 2px 5px 0px var(--my-light-color-faded);
-    --nav-link-color: var(--my-light-color);
-}
-
-.lightmode {
-    --sidebar-background-color: var(--my-light-color-faded);
-    --sidebar-box-shadow: 0px 2px 8px 0px var(--my-dark-color-faded);
-    --toprow-box-shadow: 6px 2px 5px 0px var(--my-dark-color-faded);
-    --nav-link-color: var(--my-light-color);
-}
-
 /* Body Styles */
 html, body {
     /* font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;*/
     font-family: 'Open Sans', sans-serif, Helvetica, Arial, Lucida;
 }
 
+/* under construction - add dark light switch to website*/
+    body.darkmode {
+        --bs-body-bg: var(--my-dark-color);
+        --my-black-color: black;
+        --my-red-color: red;
+        --my-white-color: white;
+        --my-orange-color: #f15a22;
+        --my-grey-color: #d1d3d4;
+        --my-black-color-faded: rgba(0, 0, 0, 0.7);
+        --my-white-color-faded: rgba(255, 255, 255, 1);
+        --my-grey-color-faded: rgba(209, 211, 212, 0.2);
+        --sidebar-background-color: var(--my-white-color-faded);
+        --sidebar-box-shadow: 0px 2px 8px 0px var(--my-black-color-faded);
+        --toprow-box-shadow: 6px 2px 5px 0px var(--my-black-color-faded);
+        --nav-link-color: var(--my-black-color);
+        --my-btn-text-color: var(--my-dark-color);
+        --my-btn-color: var(--my-light-color);
+        --my-btn-border-color: var(--my-light-color);
+        color: var(--my-light-color);
+    }
+
+    body.lightmode {
+        --bs-body-bg: var(--my-light-color);
+        --my-black-color: white;
+        --my-red-color: red;
+        --my-white-color: black;
+        --my-orange-color: #f15a22;
+        --my-grey-color: #d1d3d4;
+        --my-white-color-faded: rgba(0, 0, 0, 0.7);
+        --my-black-color-faded: rgba(255, 255, 255, 1);
+        --my-grey-color-faded: rgba(209, 211, 212, 0.2);
+        --sidebar-background-color: var(--my-black-color-faded);
+        --sidebar-box-shadow: 0px 2px 8px 0px var(--my-white-color-faded);
+        --toprow-box-shadow: 6px 2px 5px 0px var(--my-white-color-faded);
+        --nav-link-color: var(--my-white-color);
+        --my-btn-text-color: var(--my-light-color);
+        --my-btn-color: var(--my-dark-color);
+        --my-btn-border-color: var(--my-dark-color);
+        color: var(--my-dark-color);
+    }
+
+#theme-toggle {
+    font-size: 24px;
+    cursor: pointer;
+    margin: 10px;
+    color: inherit;
+    transition: color 0.3s;
+}
+
+body.lightmode #theme-toggle {
+    color: #000000; /* Dark icon for light mode */
+}
+
+body.darkmode #theme-toggle {
+    color: #ffffff; /* Light icon for dark mode */
+}
+
+
 a, .btn-link {
-    color: var(--my-black-color);
+    color: var(--my-btn-color);
 }
 
 .btn-primary {
-    color: #fff;
-    background-color: var(--my-black-color);
-    border-color: var(--my-grey-color);
+    color: var(--my-btn-text-color);
+    background-color: var(--my-btn-color);
+    border-color: var(--my-btn-border-color);
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
@@ -71,9 +116,9 @@ a, .btn-link {
 .btn {
     font-size: 15px;
     font-weight: bold;
-    color: var(--my-white-color);
-    background-color: var(--my-black-color);
-    border-color: var(--my-black-color);
+    color: var(--my-btn-text-color);
+    background-color: var(--my-btn-color);
+    border-color: var(--my-btn-color);
 }
 
     .btn:hover {
@@ -118,7 +163,7 @@ h1:focus {
 /* Page Backgrounds */
 .page-background {
     position: relative;
-    background-color: var(--my-white-color); /* Used if the image is unavailable */
+    background-color: var(--bs-body-bg); /* Used if the image is unavailable */
     height: 100vh; /* You must set a specified height */
     height: 100svh; /* You must set a specified height */
     background-position: center; /* Center the image */
@@ -126,18 +171,12 @@ h1:focus {
     background-image: var(--page-background-image);
 }
 
-/*.page-background::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);*/ /* Adjust the opacity (0.5) to control the fade effect */
-/*}*/
+.form-floating {
+    color: black !important;
+}
 
 .my-menu-btn {
-    color: var(--my-black-color) !important;
+    color: var(--my-btn-color) !important;
     border: none;
     text-decoration: none;
 }
@@ -307,7 +346,7 @@ h1:focus {
     font-size: 15px;
     margin-bottom: 15px;
     padding: 30px;
-    background: var(--my-white-color);
+    background: var(--bs-body-bg);
     border: 2px solid rgba(0,0,0, 0.3);
     border-radius: 20px;
     backdrop-filter: blur(100px);
@@ -321,7 +360,7 @@ h1:focus {
     font-size: 15px;
     margin-bottom: 15px;
     padding: 30px;
-    background: var(--my-white-color);
+    background: var(--bs-body-bg);
     /*background: transparent;*/
     border: 2px solid rgba(0,0,0, 0.3);
     border-radius: 20px;
@@ -404,7 +443,7 @@ h1:focus {
 /* Default theme row colors */
 
 .quickgrid[theme=default] tr:nth-child(odd) {
-    background-color: var(--my-white-color); /* Odd row color, replace with your desired color */
+    background-color: var(--bs-body-bg); /* Odd row color, replace with your desired color */
 }
 
 .quickgrid[theme=default] tr:nth-child(even) {
@@ -413,7 +452,7 @@ h1:focus {
 
 
 .quickgrid[theme=default] {
-    background-color: var(--my-white-color);
+    background-color: var(--bs-body-bg);
     color: var(--my-black-color);
 }
 
@@ -424,8 +463,8 @@ h1:focus {
 
 
 .form-check-input:checked {
-    background-color: var(--my-black-color);
-    border-color: var(--my-black-color);
+    background-color: var(--my-btn-color);
+    border-color: var(--my-btn-color);
 }
 
 
@@ -461,7 +500,7 @@ h1:focus {
 
 
 .refresh-date {
-    background-color: black;
-    color: white;
+    background-color: var(--my-btn-color);
+    color: var(--my-btn-text-color);
     padding: 10px; /* Add some padding for spacing */
 }
