@@ -1,0 +1,64 @@
+﻿@page "/Account/Logout"
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using Portfolio.Data
+@using System.Security.Claims;
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject ILogger<Login> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+@* 
+<button @onclick="OnLogoutClick" class="w-100 btn btn-lg btn-primary">Logout</button>
+ *@
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationState { get; set; }
+
+    protected ClaimsPrincipal user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // // Sign out the user
+        // await SignInManager.SignOutAsync();
+
+        // // Navigate to the home page or any other page after logout
+        // NavigationManager.NavigateTo("/");
+
+        Logger.LogInformation("OnLogoutClick method called.");
+
+        if (SignInManager != null && authenticationState != null)
+        {
+            var authState = await authenticationState;
+
+            if (authState?.User?.Identity?.IsAuthenticated ?? false)
+            {
+                Logger.LogInformation("User is authenticated. Signing out...");
+
+                if (SignInManager.IsSignedIn(authState.User))
+                {
+                    await SignInManager.SignOutAsync();
+                    Logger.LogInformation("User signed out successfully.");
+                    //NavigationManager.NavigateTo("Account/Login", forceLoad: true);
+                    //StateHasChanged();
+                }
+                else
+                {
+                    Logger.LogInformation("User is not signed in.");
+                }
+            }
+            else
+            {
+                Logger.LogInformation("User is not authenticated.");
+            }
+        }
+        else
+        {
+            Logger.LogError("SignInManager or authenticationState is null.");
+        }
+
+        NavigationManager.NavigateTo("Account/Login", forceLoad: true);
+    }    
+}

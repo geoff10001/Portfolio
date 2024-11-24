@@ -11,9 +11,22 @@
 
 <PageTitle>Confirm email change</PageTitle>
 
-<h1>Confirm email change</h1>
-
-<StatusMessage Message="@message" />
+<div class="wrapper formbox">
+    <section>
+        <hr />
+        <div class="row text-center">
+            <h6>
+                Confirm email change
+            </h6>
+        </div>
+        <div>
+            <StatusMessage Message="@message" />
+        </div>
+        <div class="row text-center">
+            <a class="form-label label input-margin-top" asp-page="./Account/Login"><strong>Login</strong></a>
+        </div>
+    </section>
+</div>
 
 @code {
     private string? message;

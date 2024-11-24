@@ -7,11 +7,27 @@
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IdentityRedirectManager RedirectManager
+@* @inject IEmailSender EmailSender *@
 
 <PageTitle>Confirm email</PageTitle>
 
-<h1>Confirm email</h1>
-<StatusMessage Message="@statusMessage" />
+<div class="wrapper formbox">
+    <section>
+        <hr />
+        <div class="row text-center">
+            <h6>
+                Confirm email
+            </h6>
+        </div>
+        <div>
+            <StatusMessage Message="@statusMessage" />
+        </div>
+        <div class="row text-center">
+            <a class="form-label label input-margin-top my-menu-btn" href="/account/login"><strong>Login</strong></a>
+        </div>
+    </section>
+</div>
+
 
 @code {
     private string? statusMessage;
@@ -43,6 +59,25 @@
             var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
             var result = await UserManager.ConfirmEmailAsync(user, code);
             statusMessage = result.Succeeded ? "Thank you for confirming your email." : "Error confirming your email.";
+            // if (result.Succeeded)
+            // {
+            //     //email support to let them know a user has confirmed their email address and roles should be assigned
+            //     EmailSupportAsync();
+            // }
         }
     }
+
+    // private async void EmailSupportAsync()
+    // {
+    //     var user = await UserManager.FindByIdAsync(UserId);
+    //     string SupportEmail = "username@domain.com";
+    //     string urlApprovalLink = "";
+    //     urlApprovalLink = $"https://mysitename.azurewebsites.net/Account/ManageRoleAssignment?username=" + user;
+
+    //     await EmailSender.SendEmailAsync(
+    //         SupportEmail,
+    //         user + $" has registered and confirmed their email address with the report portal.",
+    //         $"Please provide access to approved menu options using the following link <a href='{HtmlEncoder.Default.Encode(urlApprovalLink)}'>clicking here</a>.");
+
+    // }
 }

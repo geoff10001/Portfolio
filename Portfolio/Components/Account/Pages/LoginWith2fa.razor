@@ -10,39 +10,35 @@
 @inject ILogger<LoginWith2fa> Logger
 
 <PageTitle>Two-factor authentication</PageTitle>
-
-<h1>Two-factor authentication</h1>
-<hr />
-<StatusMessage Message="@message" />
-<p>Your login is protected with an authenticator app. Enter your authenticator code below.</p>
-<div class="row">
-    <div class="col-md-4">
-        <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
-            <input type="hidden" name="RememberMe" value="@RememberMe" />
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.TwoFactorCode" class="form-control" autocomplete="off" />
-                <label for="two-factor-code" class="form-label">Authenticator code</label>
-                <ValidationMessage For="() => Input.TwoFactorCode" class="text-danger" />
-            </div>
-            <div class="checkbox mb-3">
-                <label for="remember-machine" class="form-label">
-                    <InputCheckbox @bind-Value="Input.RememberMachine" />
-                    Remember this machine
-                </label>
-            </div>
+<div class="wrapper">
+    <StatusMessage Message="@message" />
+    <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
+        <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+        <input type="hidden" name="RememberMe" value="@RememberMe" />
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" role="alert" />
+        <div class="form-floating">
+            <InputText @bind-Value="Input.TwoFactorCode" class="form-control input-margin-bottom" autocomplete="off" />
+            <label for="two-factor-code" class="form-label">Authenticator code</label>
+            <ValidationMessage For="() => Input.TwoFactorCode" class="text-danger" />
+        </div>
+        <div class="checkbox">
+            <label for="remember-machine" class="form-label">
+                <InputCheckbox @bind-Value="Input.RememberMachine" />
+                Remember this machine
+            </label>
+        </div>
+        <div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary input-margin-bottom">Log in</button>
+        </div>
+        <div class="row input-margin-bottom text-center">
             <div>
-                <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
+                <a id="recovery-code-login" class="form-label label input-margin-bottom my-menu-btn"
+                   href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl">log in with a recovery code</a>.
             </div>
-        </EditForm>
-    </div>
+        </div>
+    </EditForm>
 </div>
-<p>
-    Don't have access to your authenticator device? You can
-    <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl">log in with a recovery code</a>.
-</p>
 
 @code {
     private string? message;
