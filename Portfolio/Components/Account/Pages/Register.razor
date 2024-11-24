@@ -23,8 +23,9 @@
         <StatusMessage Message="@Message" />
         <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
             <DataAnnotationsValidator />
-            <h2>Create a new account.</h2>
-            <hr />
+            <div class="row text-center">
+                <h6><strong>Register a new account</strong></h6>
+            </div>
             <ValidationSummary class="text-danger" role="alert" />
             <div class="form-floating">
                 <span class="input-icon"><i class="oi oi-envelope-closed"></i></span>

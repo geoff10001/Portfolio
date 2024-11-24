@@ -6,6 +6,11 @@
 
 /* Global Variables */
 :root {
+    --my-dark-color: black;
+    --my-light-color: black;
+    --my-dark-color-faded: rgba(0, 0, 0, 0.7);
+    --my-light-color-faded: rgba(255, 255, 255, 1);
+    
     --my-black-color: black;
     --my-red-color: red;
     --my-white-color: white;
@@ -29,25 +34,17 @@
 
 /* under construction - add dark light switch to website*/
 .darkmode {
-    --my-black-color: black;
-    --my-red-color: red;
-    --my-white-color: white;
-    --my-orange-color: #f15a22;
-    --my-grey-color: #d1d3d4;
-    --my-black-color-faded: rgba(0, 0, 0, 0.7);
-    --my-white-color-faded: rgba(255, 255, 255, 1);
-    --my-grey-color-faded: rgba(209, 211, 212, 0.2);
-    --page-background-image: url('../images/my_website_front_banner_render.jpg');
-    --menu1-page-background-image: url('../images/menu1imagebg.jpg');
-    --menu2-page-background-image: url('../images/menu2imagebg.jpg');
-    --menu3-page-background-image: url('../images/menu3imagebg.jpg');
-    --menu4-page-background-image: url('../images/menu4imagebg.jpg');
-    --sidebar-background-color: var(--my-white-color-faded);
-    --sidebar-box-shadow: 0px 2px 8px 0px var(--my-black-color-faded);
-    --toprow-box-shadow: 6px 2px 5px 0px var(--my-black-color-faded);
-    --nav-link-color: var(--my-black-color);
-    --nav-link-hover-color: var(--my-orange-color);
-    --menu-btn-background-color: var(--my-orange-color) !important;
+    --sidebar-background-color: var(--my-dark-color-faded);
+    --sidebar-box-shadow: 0px 2px 8px 0px var(--my-light-color-faded);
+    --toprow-box-shadow: 6px 2px 5px 0px var(--my-light-color-faded);
+    --nav-link-color: var(--my-light-color);
+}
+
+.lightmode {
+    --sidebar-background-color: var(--my-light-color-faded);
+    --sidebar-box-shadow: 0px 2px 8px 0px var(--my-dark-color-faded);
+    --toprow-box-shadow: 6px 2px 5px 0px var(--my-dark-color-faded);
+    --nav-link-color: var(--my-light-color);
 }
 
 /* Body Styles */
@@ -164,6 +161,18 @@ h1:focus {
     border-radius: 20px;
     backdrop-filter: blur(100px);
     box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Media query for smaller screens, such as mobile devices */
+@media (max-width: 480px) {
+    .wrapper {
+        width: 90%; /* Use a percentage to adapt to screen width */
+        margin: 20px auto; /* Reduce top/bottom margins for smaller screens */
+        font-size: 14px; /* Adjust font size for readability */
+        padding: 20px; /* Reduce padding for smaller screens */
+        border-radius: 10px; /* Adjust border-radius for consistency */
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3); /* Soften box shadow */
+    }
 }
 
 .input-margin-bottom {
@@ -328,16 +337,16 @@ h1:focus {
     width: 950px;
 }
 
-.sidebar, .sidebarsmall {
-    /*background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);*/
-    background: var(--sidebar-background-color);
+/*.sidebar, .sidebarsmall {
+    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);*/
+    /*background: var(--sidebar-background-color);
     background-color: var(--sidebar-background-color);
     box-shadow: var(--sidebar-box-shadow);
     height: 100vh;
     height: 100svh;
     position: sticky;
-    top: 0;
-}
+    top: 0;*/
+/*}
 
 .sidebarsmall {
     width: 50px;
@@ -345,7 +354,7 @@ h1:focus {
 
 .sidebar {
     width: 240px;
-}
+}*/
 
 .my-navbar-brand {
     width: 20%;
