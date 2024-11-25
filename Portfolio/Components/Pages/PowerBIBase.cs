@@ -116,6 +116,7 @@ namespace Portfolio.Components.Pages
                 }
                 GetPageRoleForReportID(reportId, out pageRole, out pageName);
 
+                //save url to sql user url accessed audit table
                 var results = await PowerBIDataRepository.CreateUserURLAudit(user.Identity.Name.ToLower(), uri.ToString() + "&PageName=" + pageName + "&PageRole=" + pageRole);
 
                 _initialized = true;
@@ -133,7 +134,9 @@ namespace Portfolio.Components.Pages
         {
             allowed = false;
             hasRole = false;
+
             spinning = true;
+
             statusmessage = false;
            await CheckPermissionsAsync();
         }
@@ -170,14 +173,19 @@ namespace Portfolio.Components.Pages
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
+            //over ride secuirty for testing
+            //allowed = true;
+            //hasRole = true;
+
+
             if (allowed && hasRole)
             {
                 if (firstRender)
                 {
-                    var datasetId = await EmbedService.GetDatasetIdFromReportAsync(GetParamGuid(workspaceId), GetParamGuid(reportId));
-                    lastRefreshDate = await EmbedService.GetLastRefreshDateAsync(GetParamGuid(workspaceId), GetParamGuid(datasetId));
+                    //var datasetId = await EmbedService.GetDatasetIdFromReportAsync(GetParamGuid(workspaceId), GetParamGuid(reportId));
+                    //lastRefreshDate = await EmbedService.GetLastRefreshDateAsync(GetParamGuid(workspaceId), GetParamGuid(datasetId));
 
-                    //IF BID MANAGER REPORT..
+                    //IF keep alive REPORT..
                     if (pageName == "A_PagenName_To_Keep_Alive")
                     {
                         // Call JavaScript to request the wake lock

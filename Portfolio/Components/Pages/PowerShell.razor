@@ -1,0 +1,91 @@
+﻿@page "/powershell"
+
+<div class="script-container">
+    <h3>PowerShell Script for Checking and Installing CrowdStrike Falcon Agent</h3>
+    <p>This script automates the process of checking if the CrowdStrike agent is installed on a list of remote machines and installing it if necessary. Below is a detailed breakdown of its functionality:</p>
+
+    <ol>
+        <li>
+            <strong>Define the Machines</strong>
+            <p>A list of machine names is defined as a PowerShell array. Each name is enclosed in quotation marks and separated by a comma:</p>
+            <pre>
+            <code>
+                $machines = @@("A-MACHINE-NAME", "A-MACHINE-NAME-2")
+            </code>
+            </pre>
+        </li>
+        <li>
+            <strong>Specify PsExec Path</strong>
+            <p>The script specifies the location of the PsExec executable:</p>
+            <pre>
+            <code>
+                $psexecPath = "C:\PSTOOLS\PSEXEC.EXE"
+            </code>
+            </pre>
+        </li>
+        <li>
+            <strong>Loop Through Machines</strong>
+            <p>For each machine in the list, the script performs the following steps:</p>
+            <ul>
+                <li><strong>Test Reachability:</strong> Uses the <code>Test-Connection</code> cmdlet to check if the machine is online.</li>
+                <li><strong>Check Installation Status:</strong> Executes a command via PsExec to test if the folder <code>C:\Program Files\CrowdStrike</code> exists.</li>
+                <li><strong>Conditionally Install CrowdStrike:</strong></li>
+                <ul>
+                    <li>If the agent is not installed, the script copies installation files to the remote machine and executes the installation script.</li>
+                    <li>After installation, it cleans up by removing temporary files.</li>
+                </ul>
+            </ul>
+        </li>
+        <li>
+            <strong>Handle Offline Machines</strong>
+            <p>If a machine is offline, the script logs this and skips the installation process for that machine.</p>
+        </li>
+    </ol>
+
+    <h3>Full Script</h3>
+    <pre>
+<code>
+# List of machines, multiple separated by a comma and enclosed in speechmarks
+$machines = @@("A-MACHINE-NAME", "A-MACHINE-NAME-2")
+
+# Path to PsExec executable
+$psexecPath = "C:\PSTOOLS\PSEXEC.EXE"
+
+# Loop through each machine
+foreach ($machine in $machines) {
+    # Test if the machine is reachable via network
+    $isReachable = Test-Connection -ComputerName $machine -Count 1 -Quiet
+
+    if ($isReachable) {
+        Write-Host "Machine $machine is reachable. Checking installation status."
+
+        # Check if "C:\Program Files\CrowdStrike" folder exists
+        & $psexecPath "\\$machine" -s -h powershell.exe -Command "if (Test-Path 'C:\Program Files\CrowdStrike') { exit 0 } else { exit 1 }"
+        $lastExitCode = $LASTEXITCODE
+
+        if ($lastExitCode -eq 0) {
+            Write-Host "CrowdStrike already installed on $machine. Skipping installation."
+        } else {
+            Write-Host "CrowdStrike not installed on $machine. Proceeding with installation."
+
+            # Create the TEMP folder and copy all files and subdirectories
+            robocopy "D:\Crowdstrike_agent" "\\$machine\C$\TEMP" /E /NFL /NDL /NP /R:3 /W:5 >$null 2>&1
+
+            # Execute the installation script remotely using PsExec
+            & $psexecPath "\\$machine" -s -h powershell.exe -ExecutionPolicy Bypass -File "C:\temp\Falcon_install.ps1"
+
+            # Remove the C:\TEMP folder after installation
+            & $psexecPath "\\$machine" -s -h powershell.exe -Command "Remove-Item -Path 'C:\TEMP' -Recurse -Force"
+        }
+    } else {
+        Write-Host "Machine $machine is offline or unreachable. Skipping."
+    }
+}
+</code>
+    </pre>
+</div>
+
+
+@code {
+
+}

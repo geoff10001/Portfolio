@@ -31,11 +31,11 @@
                     <span class="oi oi-home" aria-hidden="true"></span>
                     <a href="/">Home</a>
                 </NavLink>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                @* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <NavLink class="nav-link">
                     <span class="oi oi-envelope-closed" aria-hidden="true"></span>
                     <a href="/Identity/Account/EmailRoleRequest?pageRoleRequest=@pageRoles&userEmail=@user.Identity.Name&roleName=@pageRole&roleName=@pageRole">Email IT Support</a>
-                </NavLink>
+                </NavLink> *@
             </div>
         </div>
     }
@@ -48,7 +48,7 @@
 { *@
 
 
-@if (pageName == "AssetManagement"
+@* @if (pageName == "AssetManagement"
 || pageName == "EnergyAssetUtilisation"
 || pageName == "EnergyPL"
 || pageName == "EnergyPLGoldfields"
@@ -91,7 +91,7 @@
             background-image: var(--menu4-page-background-image);
         }
     </style>
-}
+} *@
 
   
     <div id="outer">
@@ -104,7 +104,7 @@
                     </div>
                 @using System.Globalization
                 <div class="col-sm">
-                    @if (lastRefreshDate.HasValue && (pageName == "BidManagement" || pageName == "JobProfitSummary" || pageName == "EnergyAssetUtilisationNew"))
+                    @* @if (lastRefreshDate.HasValue && (pageName == "BidManagement" || pageName == "JobProfitSummary" || pageName == "EnergyAssetUtilisationNew"))
                     {
                         <div class="w-100 btn btn-lg btn-primary input-margin-bottom">
                             Updated: @lastRefreshDate.Value.ToString("g", new CultureInfo("en-AU"))
@@ -115,7 +115,7 @@
                         <div class="w-100 btn btn-lg btn-primary input-margin-bottom">
                             Updated: Not available
                         </div>
-                    }
+                    } *@
                 </div>
                     <div class="col-sm">
                         <button class="w-100 btn btn-lg btn-primary input-margin-bottom" style="float: right; min-width:200px; max-width:350px;" id="startazure" @onclick="SubmitAzureAsync">

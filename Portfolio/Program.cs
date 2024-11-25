@@ -5,6 +5,7 @@ using Portfolio.Client.Pages;
 using Portfolio.Components;
 using Portfolio.Components.Account;
 using Portfolio.Data;
+using Portfolio.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +37,16 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+
+
+builder.Services.AddHttpClient<IPowerBIDataRepository, PowerBIDataRepository>(client =>
+{
+    client.BaseAddress = new Uri("https://uonreportingapi.azurewebsites.net/");
+#if DEBUG
+    client.BaseAddress = new Uri("https://localhost:7146/");
+    //client.BaseAddress = new Uri("https://uonreportingapi.azurewebsites.net/");
+#endif
+});
 
 var app = builder.Build();
 
