@@ -1,395 +1,452 @@
-﻿using Azure;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.JSInterop;
-using Microsoft.PowerBI.Api.Models;
-using Newtonsoft.Json.Linq;
-using Portfolio.Components.Account;
 using Portfolio.Models;
 using Portfolio.Repository;
 using Portfolio.Services;
-using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Timers;
-//using System.Timers;
 
 namespace Portfolio.Components.Pages
 {
     public class PowerBIBase : ComponentBase
     {
+        // A dictionary to store report data (ID, page name, and page role)
+        private static readonly Dictionary<string, (string PageName, string PageRole)> ReportData = new()
+        {
+            // Example: { "ReportID", ("PageName", "PageRole") }
+            // Projects menu
+            { "c5459af1-dd86-426b-8894-bce17758c7f2", ("Projects", "Labour_Projects") },
+            { "db27230f-4ea2-432d-b333-2bc5ea63c4d7", ("ProjectsPL", "PL_Projects") },
+            { "5eabe9f7-06cf-46bf-a3f7-facdd3daad66", ("JobProfitSummary", "PL_Production_Jobs") },
+            // Energy menu
+            { "a5360d6b-04bd-4908-aa80-961756477923", ("EnergyAssetUtilisation", "Energy_Asset_Utilisation") },
+            { "9d868f1f-bf88-4ef0-adc7-d424e8036b3f", ("EnergyAssetUtilisationNew", "Energy_Asset_Utilisation") },
+            { "95120663-becf-441c-a2e7-d48ded29d7de", ("JobProfitSummary", "PL_Energy_Jobs") },
+            { "b175c631-6334-4154-bd0f-9d898c1c9733", ("EnergyPL", "PL_Energy") },
+            { "4b7d1da4-1376-4c74-8505-4dd8d94f8b5c", ("EnergyPLGoldfields", "PL_Energy_Kal") },
+            { "a0c166e1-4f63-4a37-92da-83426f2dfc53", ("EnergyIndirectLabour", "Labour_Energy") },
+            // Production menu
+            { "27a3b0ca-77d1-4f2a-aa6a-7714e95f3317", ("Production", "Labour_Production") },
+            { "081321f5-9401-40b7-8b74-bdd6b8d15ecb", ("ProductionPL", "PL_Production") },
+            { "7c94ba1c-e7bf-4ece-937d-4aca113a31c1", ("ProductionStats", "Production_Statistics") },
+            { "48c12070-7604-4ece-8603-6e1b80929eb9", ("JN12091Summary", "Production_Statistics") },
+            { "01921f73-09a8-467f-9179-3a48c3af31ba", ("JobProfitSummary", "PL_Production_Jobs") },
+            // Executive menu
+            { "0330bc55-3671-4a8e-b3a7-1f1b25d1ba48", ("UONPL", "PL_UON") },
+            { "ae3f098c-34a0-4466-9eac-3e44e72dd273", ("JobProfitSummary", "PL_Jobs") },
+            // HR menu
+            { "3b7f8716-ecf0-4769-a945-f97a2701fa26", ("HR", "HR_HeadCount") },
+            { "e8433a48-1e7e-4182-aaed-70c1f5847a22", ("Safety", "HSE_Safety") },
+            { "f323804c-45f7-4419-b9d7-50a24306f20b", ("RD", "RD_Costs") },
+            { "6de02bf8-12e5-432d-9638-04b5a9ca1a41", ("RDPL", "PL_RD") },
+            { "11f5dc0f-775c-4603-8ce3-546db2cfdb00", ("ISC", "ISC_Costs") },
+            { "f67310ef-bc3f-419f-8747-076affd24489", ("SalesPipeline", "BD_Sales") },
+            { "9d948af2-a3f1-45a7-b11e-0a01793bd9cc", ("BidManagement", "BD_Sales") }
+            // Add other reports as required...
+        };
+
+
+        // Constants for report and role default values
+        private const string DefaultPageName = "default_pagename";
+        private const string DefaultPageRole = "default_pagerole";
+
+        // Declare pageName and pageRole
+        private string reportId;
+        protected static string pageName = DefaultPageName;
+        protected static string pageRole = DefaultPageRole;
+        protected string pageRoles = $"[Page: {pageName} Permission: {pageRole}]";
         protected DateTime? lastRefreshDate;
         private System.Timers.Timer? refreshTimer;
 
-        //change below three field for each new report
-        protected static string reportId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
-        protected static string pageName = "MyPowerBISummary";
-        protected static string pageRole = "RoleName_For_This_Page_Access";
-
-        static string myreport1_reportid = "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy";
-        static string myreport1_pagename = "MyReport1";
-        static string myreport1_pagerole = "RoleName_MyReport1";
-
-        static string myreport2_reportid = "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy";
-        static string myreport2_pagename = "MyReport1";
-        static string myreport2_pagerole = "RoleName_MyReport1";
-
-
-        static string myreport3_reportid = "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy";
-        static string myreport3_pagename = "MyReport1";
-        static string myreport3_pagerole = "RoleName_MyReport1";
-
-        //...etc
-
-
-        protected string pageRoles = $"[Page: {pageName} Permission: {pageRole}]";
-
-        protected ReportEmbedConfig myEmbedReport { get; set; }
+        protected ReportEmbedConfig myEmbedReport { get; private set; }
         protected ElementReference PowerBIElement;
-        private const string workspaceId = "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz";
 
-        protected bool NotSent = true;
+        protected bool IsProcessing { get; private set; }
+        protected bool IsAllowed { get; private set; }
+        protected bool HasRole { get; private set; }
+        private bool isReportNotFound = false;
 
-        //PowerBI Service is charged per hour so I typically shut it down after a number of minutes, if it has stopped this button click allows it to be strted by the suer
-        protected string ButtonAzureText => NotSent ? "Start PowerBI Server" : "Started - (Click again to request a restart)";
+        protected bool statusmessage = false;
 
-        //[Inject] protected IEmailSender EmailSender { get; set; }
+        private const string workspaceId = "7a286bcf-53b0-45c9-ab0d-c2987910278d";
+
+        protected bool isClicked = false;
+        protected string ButtonAzureText => isClicked ? "Clicked..." : "Start PowerBI Server";
+
         [Inject] protected IJSRuntime JSRuntime { get; set; }
-
-        //[Inject] IdentityRedirectManager RedirectManager { get; set; }
         [Inject] protected NavigationManager NavigationManager { get; set; }
         [Inject] protected ILogger<PowerBI> Logger { get; set; }
 
         protected IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
 
         protected ClaimsPrincipal user;
+        [TempData] protected string StatusMessage { get; set; }
 
-        protected bool allowed = false;
-        protected bool hasRole= false;
-        protected bool spinning = false;
-        protected bool statusmessage = false;
-        [TempData]
-        protected string StatusMessage { get; set; }
-        [TempData]
-        protected string StatusMessageLn2 { get; set; }
-        [TempData]
-        protected string StatusMessageLn3 { get; set; }
-        [TempData]
-        protected string StatusMessageLn4 { get; set; }
-        [TempData]
-        protected string StatusMessageLn5 { get; set; }
+        [CascadingParameter] private Task<AuthenticationState>? authenticationState { get; set; }
 
-        [CascadingParameter]
-        private Task<AuthenticationState>? authenticationState { get; set; }
-
-        [Inject] NavigationManager navManager { get; set; }
-
-        //string reportid;
-        //string pagename;
-        //string pagerole;
         [Inject] protected IPowerBIDataRepository PowerBIDataRepository { get; set; }
         private bool _initialized;
 
+        protected override async Task OnInitializedAsync()
+        {
+            if (IsProcessing) return;
+
+            IsProcessing = true;
+
+            try
+            {
+                IsAllowed = false;
+                HasRole = false;
+
+                //await InitializeUserSettingsAsync();
+
+                await CheckPermissionsAsync();
+            }
+            finally
+            {
+                IsProcessing = false;
+            }
+        }
+
         public override async Task SetParametersAsync(ParameterView parameters)
         {
-            
-            // Must do this immediately.  This sets the parameters in the component from the supplied ParameterView instance
+            // Set parameters in the component from the supplied ParameterView instance
             parameters.SetParameterProperties(this);
+
             if (!_initialized)
             {
-                var authState = await authenticationState;
-                var user = authState?.User;
-                var uri = navManager.ToAbsoluteUri(navManager.Uri);
-
-                if (user == null || !user.Identity.IsAuthenticated)
-                {
-                    //RedirectManager.RedirectTo("./Account/LogIn");
-                    NavigationManager.NavigateTo($"/Account/LogIn");
-
-                }
-
-                if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("reportid", out var ReportID))
-                {
-                    reportId = ReportID;
-                }
-                GetPageRoleForReportID(reportId, out pageRole, out pageName);
-
-                //save url to sql user url accessed audit table
-                var results = await PowerBIDataRepository.CreateUserURLAudit(user.Identity.Name.ToLower(), uri.ToString() + "&PageName=" + pageName + "&PageRole=" + pageRole);
-
-                _initialized = true;
+                await InitializeUserSettingsAsync();
             }
 
-            //IF a KEEP ALIVE REPORT..TO STOP AUTO LOG OFF IN WINDOWS DESKTOP 
-            if (pageName == "A_PagenName_To_Keep_Alive")
+            if (pageName == "BidManagement")
             {
                 SetInitialTimer();
             }
 
             await base.SetParametersAsync(ParameterView.Empty);
         }
-        protected override async Task OnInitializedAsync()
+
+        private async Task InitializeUserSettingsAsync()
         {
-            allowed = false;
-            hasRole = false;
+            // Simulate authenticated user
+            user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+        new Claim(ClaimTypes.Name, "testuser@example.com"),
+        new Claim(ClaimTypes.Role, "Superuser"), // Adjust role as needed for your test
+    }, "TestAuthentication"));
 
-            spinning = true;
+            IsAllowed = true; // Allow access for testing
+            HasRole = true;   // Assume user has the required role
 
-            statusmessage = false;
-           await CheckPermissionsAsync();
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+
+            // Extract report ID from query parameters
+            if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("reportid", out var reportID))
+            {
+                reportId = reportID;
+            }
+
+            // Get page role and name for the report ID
+            GetPageRoleForReportID(reportId, out pageRole, out pageName);
+
+            _initialized = true;
+
+            // Optional logging or mock repository call
+            await PowerBIDataRepository.CreateUserURLAudit(
+                "testuser@example.com",
+                $"{uri}&PageName={pageName}&PageRole={pageRole}");
+
+            _initialized = true;
         }
 
-        protected void GetPageRoleForReportID(string reportid, out string pagerole, out string pagename)
-        {
-            /* menu 1 */
-            if (reportid == myreport1_reportid)
-            {
-                pagerole = myreport1_pagerole;
-                pagename = myreport1_pagename;
-            }
-            // menu 2
-            else if (reportid == myreport1_reportid)
-            {
-                pagerole = myreport1_pagerole;
-                pagename = myreport2_pagename;
-            }
-            else if (reportid == myreport3_reportid)
-            {
-                pagerole = myreport3_pagerole;
-                pagename = myreport3_pagename;
-            }
-            
-            else
-            {
-                // Default values if reportid doesn't match any of the predefined values
-                pagerole = "default_pagerole";
-                pagename = "default_pagename";
-            }
 
-            
-        }
+        //private async Task InitializeUserSettingsAsync()
+        //{
+        //    var authState = await authenticationState;
+        //    var user = authState?.User;
+        //    var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
 
-        protected override async Task OnAfterRenderAsync(bool firstRender)
-        {
-            //over ride secuirty for testing
-            //allowed = true;
-            //hasRole = true;
+        //    // Redirect to login if user is not authenticated
+        //    if (user?.Identity?.IsAuthenticated != true)
+        //    {
+        //        NavigationManager.NavigateTo("/Account/LogIn");
+        //        return;
+        //    }
 
+        //    // Extract report ID from query parameters
+        //    if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("reportid", out var reportID))
+        //    {
+        //        reportId = reportID;
+        //    }
 
-            if (allowed && hasRole)
-            {
-                if (firstRender)
-                {
-                    //var datasetId = await EmbedService.GetDatasetIdFromReportAsync(GetParamGuid(workspaceId), GetParamGuid(reportId));
-                    //lastRefreshDate = await EmbedService.GetLastRefreshDateAsync(GetParamGuid(workspaceId), GetParamGuid(datasetId));
+        //    // Get page role and name for the report ID
+        //    GetPageRoleForReportID(reportId, out pageRole, out pageName);
 
-                    //IF keep alive REPORT..
-                    if (pageName == "A_PagenName_To_Keep_Alive")
-                    {
-                        // Call JavaScript to request the wake lock
-                        await RequestWakeLock();
-                    }
+        //    // Log the URL for auditing purposes
+        //    await PowerBIDataRepository.CreateUserURLAudit(user.Identity.Name.ToLower(),
+        //        $"{uri}&PageName={pageName}&PageRole={pageRole}");
 
-                    myEmbedReport = await EmbedService.GetEmbedParams(GetParamGuid(workspaceId), GetParamGuid(reportId));
-
-                    await Interop.CreateReport(
-                        JSRuntime,
-                        PowerBIElement,
-                        myEmbedReport.EmbedToken.Token,
-                        myEmbedReport.EmbedReports[0].EmbedUrl,
-                        myEmbedReport.EmbedReports[0].ReportId.ToString());
-                }
-                spinning = false;
-                
-                StateHasChanged();
-                
-            }
-            spinning = false;
-        }
-
-        private static Guid GetParamGuid(string param)
-        {
-            if (Guid.TryParse(param, out Guid paramGuid))
-            {
-                return paramGuid;
-            }
-
-            // Handle parsing failure gracefully
-            return Guid.Empty;
-        }
-
-        protected async Task SubmitAzureAsync()
-        {
-            try
-            {
-                string embedResult = await EmbedService.StartPowerBIAzureService("resume");
-
-                //string SupportEmail = "Support@domain.com";
-                //var authState = await authenticationState;
-                //var user = authState?.User;
-
-                //string emailbodytext = "";
-
-                //string emailsubject = user.Identity.Name + $" has requested a PowerBI Server Start";
-                //string emailbody = user.Identity.Name + $" has requested a PowerBI Server Start" + emailbodytext;
-                //await EmailSender.SendEmailAsync(ITSupportEmail, emailsubject, emailbody);
-
-
-                NotSent = false;
-            }
-            catch (Exception ex)
-            {
-                // Handle exceptions, log, or notify the user
-                Logger.LogError(ex, "Error occurred during PowerBI Azure service request.");
-            }
-        }
+        //    _initialized = true;
+        //}
 
         private async Task CheckPermissionsAsync()
         {
-            var authState = await authenticationState;
-            var user = authState?.User;
+            // Simulate permissions for testing
+            IsAllowed = true;
+            HasRole = true;
 
-            if (user?.Identity is not null && user.Identity.IsAuthenticated)
-            {
-                var userHasRequiredPermissions = HasRequiredPermissions(user);
-                if (!userHasRequiredPermissions)
-                {
-                    Logger.LogInformation("User does not have the required permissions to access this page.");
-                    SetPermissionErrorMessage();
-                }
-                else if (userHasRequiredPermissions)
-                {
-                       hasRole = true;
-                }
-            }
-
-            var claimTwoFactorEnabled = user.Claims.FirstOrDefault(t => t.Type == "TwoFactorEnabled");
-
-            if (claimTwoFactorEnabled != null && "true".Equals(claimTwoFactorEnabled.Value))
-            {
-                allowed = true;
-            }
-            else
-            {
-                NavigationManager.NavigateTo($"/Account/Manage/TwoFactorAuthentication");
-            }
+            Logger.LogInformation("Bypassing permissions for testing.");
         }
+
+
+        //private async Task CheckPermissionsAsync()
+        //{
+        //    var authState = await authenticationState;
+        //    var user = authState?.User;
+
+        //    if (user?.Identity?.IsAuthenticated == true)
+        //    {
+        //        var userHasRequiredPermissions = HasRequiredPermissions(user);
+        //        if (!userHasRequiredPermissions)
+        //        {
+        //            Logger.LogInformation("User does not have the required permissions to access this page.");
+        //            SetPermissionErrorMessage();
+        //        }
+        //        else
+        //        {
+        //            HasRole = true;
+        //        }
+        //    }
+
+        //    var claimTwoFactorEnabled = user?.Claims?.FirstOrDefault(t => t.Type == "TwoFactorEnabled")?.Value;
+
+        //    if (claimTwoFactorEnabled == "true")
+        //    {
+        //        IsAllowed = true;
+        //    }
+        //    else
+        //    {
+        //        NavigationManager.NavigateTo("/Account/Manage/TwoFactorAuthentication");
+        //    }
+        //}
 
         private bool HasRequiredPermissions(ClaimsPrincipal user)
         {
-            var userIsSuperUser = user.IsInRole("Superuser");
-            var userIsPageRole = user.IsInRole(pageRole);
-            return userIsSuperUser || userIsPageRole;
+            return user.IsInRole("Superuser") || user.IsInRole(pageRole);
         }
 
         private void SetPermissionErrorMessage()
         {
-            //StatusMessage = $"We apologize, but it seems that you do not currently have the necessary permissions to access this page.";
-            //StatusMessageLn2 = $"To obtain access, kindly seek approval from your supervisor and then contact our IT support team.";
-            //StatusMessageLn3 = $"Please provide them with the details of this page and the permission required, so that they can assist you with the necessary access.";
-            //StatusMessageLn4 = $"" + pageRoles;
-            //StatusMessageLn5 = $"Thank you for your cooperation.";
+            if (ReportData.TryGetValue(reportId, out var reportInfo))
+            {
+                pageRole = reportInfo.PageRole;
+                pageName = reportInfo.PageName;
+            }
 
-            //statusmessage = true;
-            //spinning = false;
-            //StateHasChanged();
-            GetPageRoleForReportID(reportId, out pageRole, out pageName);
-            NavigationManager.NavigateTo($"Error?messageid=missingrole&pagerole=" + pageRole + "&pagename=" + pageName);
+            NavigationManager.NavigateTo($"Error?messageid=missingrole&pagerole={pageRole}&pagename={pageName}");
+        }
+
+        private void GetPageRoleForReportID(string reportid, out string pagerole, out string pagename)
+        {
+            if (!ReportData.TryGetValue(reportid, out var pageData))
+            {
+                pagerole = DefaultPageRole;
+                pagename = DefaultPageName;
+                return;
+            }
+
+            pagerole = pageData.PageRole;
+            pagename = pageData.PageName;
+        }
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (!firstRender) return;
+            if (!IsAllowed || !HasRole) return;
+            IsProcessing = true;
+
+            var workspaceGuid = GetParamGuid(workspaceId);
+            var reportGuid = GetParamGuid(reportId);
+
+            if (workspaceGuid == null || reportGuid == null)
+            {
+                isReportNotFound = true;
+                LogWarning("Invalid WorkspaceId or ReportId provided.");
+            }
+            else
+            {
+                try
+                {
+                    var datasetId = await EmbedService.GetDatasetIdFromReportAsync(workspaceGuid, reportGuid);
+                    if (string.IsNullOrWhiteSpace(datasetId))
+                    {
+                        LogWarning("Dataset ID is null or empty.");
+                        isReportNotFound = true;
+                    }
+                    else
+                    {
+                        lastRefreshDate = await EmbedService.GetLastRefreshDateAsync(workspaceGuid, Guid.Parse(datasetId));
+                    }
+                }
+                catch (Microsoft.Rest.HttpOperationException ex) when (ex.Response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    LogError($"Report or Workspace not found: WorkspaceId = {workspaceGuid}, ReportId = {reportGuid}", ex);
+                    isReportNotFound = true;
+                }
+                catch (Exception ex)
+                {
+                    LogError("Unexpected error while fetching dataset ID or refresh date.", ex);
+                    isReportNotFound = true;
+                }
+            }
+
+            if (pageName == "BidManagement")
+            {
+                await RequestWakeLock();
+            }
+            else
+            {
+                // If it's not the BidManagement page, dispose of the timer to prevent memory leaks
+                DisposeTimer();
+            }
+
+            await EmbedReport(isReportNotFound);
+
+            IsProcessing = false;
+            StateHasChanged();
+        }
+
+        private async Task EmbedReport(bool isPublicReport)
+        {
+            if (isPublicReport)
+            {
+                // Handle public report embedding
+                string publicEmbedUrl = "https://app.powerbi.com/view?r=eyJrIjoiZWE4ZjU1MjAtZDA3MS00MzA3LTg3NWQtOTBmYTA0YTQzYTI2IiwidCI6IjNmYjhiOWZkLTM1ZTgtNGRkYi1iMjRmLTgzMTRiNjg5ZTgzMiJ9";
+
+                await Interop.CreateReport(
+                    JSRuntime,
+                    PowerBIElement,
+                    null, // No access token needed
+                    publicEmbedUrl,
+                    null  // No report ID needed
+                );
+            }
+            else
+            {
+                // Handle private report embedding
+                var embedParams = await EmbedService.GetEmbedParams(GetParamGuid(workspaceId), GetParamGuid(reportId));
+
+                if (embedParams?.EmbedReports?.Count > 0)
+                {
+                    var embedReport = embedParams.EmbedReports[0];
+                    await Interop.CreateReport(
+                        JSRuntime,
+                        PowerBIElement,
+                        embedParams.EmbedToken.Token,
+                        embedReport.EmbedUrl,
+                        embedReport.ReportId.ToString()
+                    );
+                }
+                else
+                {
+                    LogWarning("No reports found in embed parameters.");
+                }
+            }
+        }
+
+        private void LogWarning(string message)
+        {
+            Console.WriteLine($"[Warning]: {message}");
+        }
+
+        private void LogError(string message, Exception ex)
+        {
+            Console.WriteLine($"[Error]: {message}\nException: {ex}");
+        }
+
+        private static Guid GetParamGuid(string param)
+        {
+            return Guid.TryParse(param, out Guid paramGuid) ? paramGuid : Guid.Empty;
         }
 
         private void SetInitialTimer()
         {
+
             DateTime now = DateTime.Now;
 
-            // Find the next 30-minute slot
-            DateTime firstTrigger = GetNextTimeSlot(now);
-            double initialInterval = (firstTrigger - now).TotalMilliseconds;
+            // Calculate interval until the next 30-minute slot
+            double initialInterval = (GetNextTimeSlot(now) - now).TotalMilliseconds;
 
-            if (initialInterval <= 0)
-            {
-                // If the calculated time has passed (which shouldn't happen), skip to the next 30-minute slot
-                //firstTrigger = GetNextTimeSlot(now);
-                initialInterval = 1000;
-            }
+            // Ensure a minimum interval of 1 second
+            initialInterval = Math.Max(initialInterval, 1000);
 
-            // Set the timer for the first trigger
-            refreshTimer = new System.Timers.Timer(initialInterval);
-            refreshTimer.Elapsed += FirstRefresh;
-            refreshTimer.AutoReset = false; // Trigger only once for the first refresh
-            refreshTimer.Enabled = true;
+            // Set the timer for the first refresh
+            SetupTimer(initialInterval, FirstRefresh, false);
         }
 
         private DateTime GetNextTimeSlot(DateTime currentTime)
         {
-            int minutes = currentTime.Minute;
+            // Round down to the nearest half-hour mark
+            int baseMinutes = (currentTime.Minute >= 30) ? 30 : 0;
+            DateTime baseTime = new DateTime(currentTime.Year, currentTime.Month, currentTime.Day, currentTime.Hour, baseMinutes, 0);
 
-            // If we're past the half-hour mark (e.g., 6:45), go to the next full hour (7:05)
-            if (minutes >= 35)
+            // Calculate the next time slot (hh:05 or hh:35)
+            DateTime nextTimeSlot = baseTime.AddMinutes(35); // Add 35 minutes for the next slot
+
+            // If the next slot is in the next hour, adjust accordingly
+            if (currentTime >= nextTimeSlot)
             {
-                // Check if the current hour is 23; if so, move to the next day
-                if (currentTime.Hour == 23)
-                {
-                    return new DateTime(currentTime.Year, currentTime.Month, currentTime.Day).AddDays(1).AddHours(0).AddMinutes(5);
-                }
-                else
-                {
-                    return new DateTime(currentTime.Year, currentTime.Month, currentTime.Day, currentTime.Hour + 1, 5, 0);
-                }
+                nextTimeSlot = baseTime.AddHours(1).AddMinutes(5); // Move to hh:05 of the next hour
             }
-            // If it's between xx:05 and xx:34, go to the xx:35 slot
-            else if (minutes >= 5)
+
+            return nextTimeSlot;
+        }
+
+        private void SetupTimer(double interval, ElapsedEventHandler handler, bool autoReset)
+        {
+            // Dispose of the old timer, if any
+            DisposeTimer();
+
+            // Initialise and configure the new timer
+            refreshTimer = new System.Timers.Timer(interval)
             {
-                return new DateTime(currentTime.Year, currentTime.Month, currentTime.Day, currentTime.Hour, 35, 0);
+                AutoReset = autoReset,
+                Enabled = true
+            };
+
+            refreshTimer.Elapsed += handler;
+        }
+
+        private void RefreshPage()
+        {
+            try
+            {
+                InvokeAsync(() =>
+                {
+                    NavigationManager?.NavigateTo(NavigationManager.Uri, forceLoad: true);
+                });
             }
-            // If it's before xx:05, go to xx:05
-            else
+            catch (Exception ex)
             {
-                return new DateTime(currentTime.Year, currentTime.Month, currentTime.Day, currentTime.Hour, 5, 0);
+                Console.Error.WriteLine($"Error during page refresh: {ex.Message}");
             }
         }
 
         private void FirstRefresh(object? sender, ElapsedEventArgs e)
         {
-            // Refresh the page at the calculated initial time
-            //InvokeAsync(() => NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true));
-            // Ensure thread-safe operation
-            InvokeAsync(() =>
-            {
-                if (NavigationManager != null)
-                {
-                    NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
-                }
-            });
-
-            // After the first refresh, set the timer to refresh every 30 minutes
-            refreshTimer = new System.Timers.Timer(30 * 60 * 1000); // 30 minutes in milliseconds
-            refreshTimer.Elapsed += SubsequentRefresh;
-            refreshTimer.AutoReset = true;  // Keep refreshing every 30 minutes
-            refreshTimer.Enabled = true;
+            RefreshPage();
+            // Recurring 30-minute refresh schedule
+            SetupTimer(30 * 60 * 1000, SubsequentRefresh, true);
         }
 
         private void SubsequentRefresh(object? sender, ElapsedEventArgs e)
         {
-            // Refresh the page every 30 minutes after the initial refresh
-            //InvokeAsync(() => NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true));
-
-            // Ensure thread-safe operation
-            InvokeAsync(() =>
-            {
-                if (NavigationManager != null)
-                {
-                    NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
-                }
-            });
+            RefreshPage();
         }
 
-        public void Dispose()
-        {
-            // Clean up the timer when the component is disposed
-            refreshTimer?.Dispose();
-        }
         private async Task RequestWakeLock()
         {
             try
@@ -398,15 +455,53 @@ namespace Portfolio.Components.Pages
             }
             catch (JSException ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
-                // Handle the error here, possibly re-invoke the script or log for further diagnosis
+                // Graceful error handling if the wake lock fails
+                Console.WriteLine($"Error while requesting wake lock: {ex.Message}");
             }
         }
 
         public async Task ReleaseWakeLock()
         {
-            await JSRuntime.InvokeVoidAsync("releaseWakeLock");
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("releaseWakeLock");
+            }
+            catch (JSException ex)
+            {
+                // Graceful error handling if the release wake lock fails
+                Console.WriteLine($"Error while releasing wake lock: {ex.Message}");
+            }
         }
+        public void DisposeTimer()
+        {
+            // Clean up the timer when the component is disposed
+            refreshTimer?.Dispose();
+            refreshTimer = null;
+        }
+
+        protected async Task SubmitAzureAsync()
+        {
+            try
+            {
+                // Start the Power BI Azure service asynchronously
+                string embedResult = await EmbedService.StartPowerBIAzureService("resume");
+
+                // After successful submission, update state accordingly
+                isClicked = false;
+
+                // Optionally log the success of the operation
+                Logger.LogInformation("Power BI Azure service request successful. Result: " + embedResult);
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions, log the error, and optionally notify the user
+                Logger.LogError(ex, "Error occurred during PowerBI Azure service request.");
+
+                // Optionally, keep NotSent true if the request failed, depending on your logic
+                isClicked = true;
+            }
+        }
+
 
     }
 }

@@ -1,182 +1,114 @@
 ﻿@rendermode @(new InteractiveServerRenderMode(false))
-@* @attribute [StreamRendering(true)] *@
 
 @page "/powerbi"
 @inherits PowerBIBase
 
-@if (@spinning == true || @statusmessage == true)
+@if (IsProcessing)
 {
-    if (@statusmessage == true)
-    {
-        <div class="wrapper-entry-form">
-            <div class="row text-center">
+    <div class="spinner"></div>  <!-- Spinner when processing -->
+}
+
+@if (statusmessage)
+{
+    <div class="wrapper-entry-form">
+        <div class="row text-center">
+            @for (var i = 1; i <= 5; i++)
+            {
                 <p>
-                    <partial name="_StatusMessageSimple" for="StatusMessage" />
+                    <partial name="_StatusMessageSimple" for="@($"StatusMessageLn{i}")" />
                 </p>
-                <p>
-                    <partial name="_StatusMessageSimple" for="StatusMessageLn2" />
-                </p>
-                <p>
-                    <partial name="_StatusMessageSimple" for="StatusMessageLn3" />
-                </p>
-                <p>
-                    <partial name="_StatusMessageSimple" for="StatusMessageLn4" />
-                </p>
-                <p>
-                    <partial name="_StatusMessageSimple" for="StatusMessageLn5" />
-                </p>
-            </div>
-            <div class="row text-center">
-                <NavLink class="nav-link">
-                    <span class="oi oi-home" aria-hidden="true"></span>
-                    <a href="/">Home</a>
-                </NavLink>
-                @* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <NavLink class="nav-link">
-                    <span class="oi oi-envelope-closed" aria-hidden="true"></span>
-                    <a href="/Identity/Account/EmailRoleRequest?pageRoleRequest=@pageRoles&userEmail=@user.Identity.Name&roleName=@pageRole&roleName=@pageRole">Email IT Support</a>
-                </NavLink> *@
-            </div>
+            }
         </div>
-    }
-    if (@spinning == true)
+        <div class="row text-center">
+            <NavLink class="nav-link">
+                <span class="oi oi-home" aria-hidden="true"></span>
+                <a href="/">Home</a>
+            </NavLink>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <NavLink class="nav-link">
+                <span class="oi oi-envelope-closed" aria-hidden="true"></span>
+                <a href="/Identity/Account/EmailRoleRequest?pageRoleRequest=@pageRoles&userEmail=@user.Identity.Name&roleName=@pageRole&roleName=@pageRole">Email IT Support</a>
+            </NavLink>
+        </div>
+    </div>
+}
+
+@{
+    string backgroundClass = pageName switch
     {
-        <div class="spinner"></div>
-    }
+        "AssetManagement" or "EnergyAssetUtilisation" or "EnergyPL" or "EnergyPLGoldfields" or "EnergySales" or "EnergyIndirectLabour" => "energy-page-background-image",
+        "Production" or "ProductionPL" or "ProductionStats" => "production-page-background-image",
+        "Projects" or "ProjectsPL" => "projects-page-background-image",
+        "CorporatePL" => "corporate-page-background-image",
+        _ => null
+    };
 }
-@* else
-{ *@
 
-
-@* @if (pageName == "AssetManagement"
-|| pageName == "EnergyAssetUtilisation"
-|| pageName == "EnergyPL"
-|| pageName == "EnergyPLGoldfields"
-|| pageName == "EnergySales"
-|| pageName == "EnergyIndirectLabour")
+@if (backgroundClass != null)
 {
     <style>
         .page-background {
-            background-image: var(--menu1-page-background-image);
+            background-image: var(-- @backgroundClass );
         }
     </style>
 }
 
-@if (pageName == "Production"
-|| pageName == "ProductionPL"
-|| pageName == "ProductionStats")
-{
-    <style>
-        .page-background {
-            background-image: var(--menu2-page-background-image);
-        }
-    </style>
-}
-
-
-@if (pageName == "Projects"
-|| pageName == "ProjectsPL")
-{
-    <style>
-        .page-background {
-            background-image: var(--menu3-page-background-image);
-        }
-    </style>
-}
-
-@if (pageName == "CorporatePL")
-{
-    <style>
-        .page-background {
-            background-image: var(--menu4-page-background-image);
-        }
-    </style>
-} *@
-
-  
-    <div id="outer">
-        <div id="inner">
-            <div class="container">
-                <div class="row">
-                    <div class="col-sm">
-                        <button class="w-100 btn btn-lg btn-primary input-margin-bottom" style="float: left; max-width:200px;" onclick="toggleFullScreen()">Full Screen</button>
-
-                    </div>
+<div id="outer">
+    <div id="inner">
+        <div class="container">
+            <div class="row">
+                <div class="col-sm">
+                    <button class="w-100 btn btn-lg btn-primary input-margin-bottom" style="float: left; max-width:200px;" onclick="toggleFullScreen()">Full Screen</button>
+                </div>
                 @using System.Globalization
                 <div class="col-sm">
-                    @* @if (lastRefreshDate.HasValue && (pageName == "BidManagement" || pageName == "JobProfitSummary" || pageName == "EnergyAssetUtilisationNew"))
-                    {
-                        <div class="w-100 btn btn-lg btn-primary input-margin-bottom">
-                            Updated: @lastRefreshDate.Value.ToString("g", new CultureInfo("en-AU"))
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="w-100 btn btn-lg btn-primary input-margin-bottom">
-                            Updated: Not available
-                        </div>
-                    } *@
-                </div>
-                    <div class="col-sm">
-                        <button class="w-100 btn btn-lg btn-primary input-margin-bottom" style="float: right; min-width:200px; max-width:350px;" id="startazure" @onclick="SubmitAzureAsync">
-                            <span class="oi oi-power-standby" style="float: left;margin-right: 10px;" aria-hidden="true"> </span>
-                            @ButtonAzureText
-
-                        </button>
-
+                    <div class="w-100 btn btn-lg btn-primary input-margin-bottom">
+                        Updated: @(lastRefreshDate?.ToString("g", new CultureInfo("en-AU")) ?? "Not available")
                     </div>
                 </div>
-                <div class="row">
-                <div @ref="@PowerBIElement" id="embedContainer">
-                    </div>
+                <div class="col-sm">
+                    <button class="w-100 btn btn-lg btn-primary input-margin-bottom" style="float: right; min-width:200px; max-width:350px;" id="startazure" @onclick="SubmitAzureAsync">
+                        <span class="oi oi-power-standby" style="float: left;margin-right: 10px;" aria-hidden="true"></span>
+                        @ButtonAzureText
+                    </button>
                 </div>
+            </div>
+            <div class="row">
+                <div @ref="@PowerBIElement" id="embedContainer"></div>
             </div>
         </div>
     </div>
-  @*  } *@
+</div>
+
 <script>
-
-
-    // let wasRefreshed = false;
-
-    // window.checkRefreshAndToggleFullscreen = function () {
-    //     if (wasRefreshed) {
-    //         toggleFullScreen(); // Call your fullscreen function
-    //         wasRefreshed = false; // Reset after handling the refresh
-    //     }
-    // };
-
     window.ShowMyPowerBI = {
         showReport: function (reportContainer, accessToken, embedUrl, embedReportId) {
-            // Get models. models contains enums that can be used.
-            var models = window['powerbi-client'].models;
-            var config = {
-                type: 'report',
-                tokenType: models.TokenType.Embed,
-                accessToken: accessToken,
-                embedUrl: embedUrl,
-                id: embedReportId,
-                permissions: models.Permissions.All,
-                settings: {
-                    filterPaneEnabled: true,
-                    navContentPaneEnabled: true,
-                    bars: {
-                        statusBar: {
-                            visible: true
+            if (!accessToken) {
+                // Public report embedding via iframe
+                reportContainer.innerHTML = `
+                    <iframe width="100%" height="600px" src="${embedUrl}" frameborder="0" allowFullScreen="true"></iframe>
+                `;
+            } else {
+                // Private report embedding using powerbi-client
+                var models = window['powerbi-client'].models;
+                var config = {
+                    type: 'report',
+                    tokenType: models.TokenType.Embed,
+                    accessToken: accessToken,
+                    embedUrl: embedUrl,
+                    id: embedReportId,
+                    permissions: models.Permissions.All,
+                    settings: {
+                        filterPaneEnabled: true,
+                        navContentPaneEnabled: true,
+                        bars: {
+                            statusBar: { visible: true }
                         }
                     }
-                }
-            };
+                };
 
-            // Indicate that a refresh is happening
-            //wasRefreshed = true;
-            
-            // Embed the report and display it within the div container.
-            powerbi.embed(reportContainer, config);
-
-            // After embedding, check and possibly toggle fullscreen
-            //setTimeout(window.checkRefreshAndToggleFullscreen, 500); // Optional delay to allow for rendering
+                powerbi.embed(reportContainer, config);
+            }
         },
     };
 </script>
-
