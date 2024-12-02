@@ -36,7 +36,7 @@ namespace Portfolio.Components.Pages
             { "48c12070-7604-4ece-8603-6e1b80929eb9", ("JN12091Summary", "Production_Statistics") },
             { "01921f73-09a8-467f-9179-3a48c3af31ba", ("JobProfitSummary", "PL_Production_Jobs") },
             // Executive menu
-            { "0330bc55-3671-4a8e-b3a7-1f1b25d1ba48", ("UONPL", "PL_UON") },
+            { "0330bc55-3671-4a8e-b3a7-1f1b25d1ba48", ("MyPL", "PL_My") },
             { "ae3f098c-34a0-4466-9eac-3e44e72dd273", ("JobProfitSummary", "PL_Jobs") },
             // HR menu
             { "3b7f8716-ecf0-4769-a945-f97a2701fa26", ("HR", "HR_HeadCount") },

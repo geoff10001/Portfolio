@@ -41,10 +41,10 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 
 builder.Services.AddHttpClient<IPowerBIDataRepository, PowerBIDataRepository>(client =>
 {
-    client.BaseAddress = new Uri("https://uonreportingapi.azurewebsites.net/");
+    client.BaseAddress = new Uri("https://geoffmcfaddenapi.azurewebsites.net/");
 #if DEBUG
     client.BaseAddress = new Uri("https://localhost:7146/");
-    //client.BaseAddress = new Uri("https://uonreportingapi.azurewebsites.net/");
+    //client.BaseAddress = new Uri("https://geoffmcfaddenapi.azurewebsites.net/");
 #endif
 });
 
