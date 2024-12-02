@@ -6,6 +6,7 @@ using Microsoft.JSInterop;
 using Portfolio.Models;
 using Portfolio.Repository;
 using Portfolio.Services;
+using System;
 using System.Security.Claims;
 using System.Timers;
 
@@ -129,52 +130,19 @@ namespace Portfolio.Components.Pages
             await base.SetParametersAsync(ParameterView.Empty);
         }
 
-        private async Task InitializeUserSettingsAsync()
-        {
-            // Simulate authenticated user
-            user = new ClaimsPrincipal(new ClaimsIdentity(new[]
-            {
-        new Claim(ClaimTypes.Name, "testuser@example.com"),
-        new Claim(ClaimTypes.Role, "Superuser"), // Adjust role as needed for your test
-    }, "TestAuthentication"));
-
-            IsAllowed = true; // Allow access for testing
-            HasRole = true;   // Assume user has the required role
-
-            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-
-            // Extract report ID from query parameters
-            if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("reportid", out var reportID))
-            {
-                reportId = reportID;
-            }
-
-            // Get page role and name for the report ID
-            GetPageRoleForReportID(reportId, out pageRole, out pageName);
-
-            _initialized = true;
-
-            // Optional logging or mock repository call
-            await PowerBIDataRepository.CreateUserURLAudit(
-                "testuser@example.com",
-                $"{uri}&PageName={pageName}&PageRole={pageRole}");
-
-            _initialized = true;
-        }
-
-
         //private async Task InitializeUserSettingsAsync()
         //{
-        //    var authState = await authenticationState;
-        //    var user = authState?.User;
-        //    var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-
-        //    // Redirect to login if user is not authenticated
-        //    if (user?.Identity?.IsAuthenticated != true)
+        //    // Simulate authenticated user
+        //    user = new ClaimsPrincipal(new ClaimsIdentity(new[]
         //    {
-        //        NavigationManager.NavigateTo("/Account/LogIn");
-        //        return;
-        //    }
+        //        new Claim(ClaimTypes.Name, "testuser@example.com"),
+        //        new Claim(ClaimTypes.Role, "Superuser"), // Adjust role as needed for your test
+        //    }, "TestAuthentication"));
+
+        //    IsAllowed = true; // Allow access for testing
+        //    HasRole = true;   // Assume user has the required role
+
+        //    var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
 
         //    // Extract report ID from query parameters
         //    if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("reportid", out var reportID))
@@ -185,21 +153,144 @@ namespace Portfolio.Components.Pages
         //    // Get page role and name for the report ID
         //    GetPageRoleForReportID(reportId, out pageRole, out pageName);
 
-        //    // Log the URL for auditing purposes
-        //    await PowerBIDataRepository.CreateUserURLAudit(user.Identity.Name.ToLower(),
+        //    _initialized = true;
+
+        //    // Optional logging or mock repository call
+        //    await PowerBIDataRepository.CreateUserURLAudit(
+        //        "testuser@example.com",
         //        $"{uri}&PageName={pageName}&PageRole={pageRole}");
 
         //    _initialized = true;
         //}
 
+
+        private async Task InitializeUserSettingsAsync()
+        {
+            var isTestMode = Environment.GetEnvironmentVariable("TestMode") == "true";
+            var user = new ClaimsPrincipal();
+
+            if (isTestMode)
+            {
+                Logger.LogInformation("Test mode enabled: bypassing authentication.");
+
+                // Simulate an authenticated test user
+                user = CreateTestUser();
+                IsAllowed = true;
+                HasRole = true;
+            }
+            else
+            {
+                var authState = await authenticationState;
+                user = authState?.User;
+
+                if (!IsUserAuthenticated(user))
+                {
+                    Logger.LogWarning("User is not authenticated. Redirecting to login.");
+                    NavigationManager.NavigateTo("/Account/LogIn");
+                    return;
+                }
+            }
+
+            // Parse query parameters to extract report ID
+            reportId = GetReportIdFromQuery();
+
+            // Retrieve page role and name based on report ID
+            GetPageRoleForReportID(reportId, out pageRole, out pageName);
+
+            // Log user activity for auditing purposes
+            await LogUserActivityAsync(user.Identity?.Name, pageName, pageRole);
+
+            _initialized = true;
+        }
+
         private async Task CheckPermissionsAsync()
         {
-            // Simulate permissions for testing
-            IsAllowed = true;
-            HasRole = true;
+            var isTestMode = Environment.GetEnvironmentVariable("TestMode") == "true";
 
-            Logger.LogInformation("Bypassing permissions for testing.");
+            if (isTestMode)
+            {
+                Logger.LogInformation("Test mode enabled: bypassing permissions.");
+                IsAllowed = true;
+                HasRole = true;
+                return;
+            }
+
+            var authState = await authenticationState;
+            var user = authState?.User;
+
+            if (user?.Identity?.IsAuthenticated == true)
+            {
+                if (!HasRequiredPermissions(user))
+                {
+                    Logger.LogWarning("User lacks required permissions for this page.");
+                    SetPermissionErrorMessage();
+                    return;
+                }
+
+                HasRole = true;
+            }
+
+            if (!IsTwoFactorEnabled(user))
+            {
+                Logger.LogInformation("Two-factor authentication not enabled. Redirecting to setup.");
+                NavigationManager.NavigateTo("/Account/Manage/TwoFactorAuthentication");
+                return;
+            }
+
+            IsAllowed = true;
         }
+
+        #region Helper Methods
+
+        private ClaimsPrincipal CreateTestUser()
+        {
+            return new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+        new Claim(ClaimTypes.Name, "testuser@example.com"),
+        new Claim(ClaimTypes.Role, "Superuser") // Adjust role as needed for testing
+    }, "TestAuthentication"));
+        }
+
+        private bool IsUserAuthenticated(ClaimsPrincipal user)
+        {
+            return user?.Identity?.IsAuthenticated == true;
+        }
+
+        private string GetReportIdFromQuery()
+        {
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+            if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("reportid", out var reportID))
+            {
+                return reportID;
+            }
+
+            Logger.LogWarning("Report ID not found in query parameters.");
+            return string.Empty;
+        }
+
+        private async Task LogUserActivityAsync(string userName, string pageName, string pageRole)
+        {
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+            var auditUrl = $"{uri}&PageName={pageName}&PageRole={pageRole}";
+
+            if (!string.IsNullOrEmpty(userName))
+            {
+                await PowerBIDataRepository.CreateUserURLAudit(userName.ToLower(), auditUrl);
+            }
+            else
+            {
+                Logger.LogWarning("User name is null or empty. Skipping audit log.");
+            }
+        }
+
+        private bool IsTwoFactorEnabled(ClaimsPrincipal user)
+        {
+            var claimTwoFactorEnabled = user?.Claims?.FirstOrDefault(t => t.Type == "TwoFactorEnabled")?.Value;
+            return claimTwoFactorEnabled == "true";
+        }
+
+        #endregion
+
 
 
         //private async Task CheckPermissionsAsync()

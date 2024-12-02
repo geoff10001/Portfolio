@@ -518,3 +518,53 @@ h1:focus {
     color: var(--my-btn-text-color);
     padding: 10px; /* Add some padding for spacing */
 }
+
+/* General Button Styling */
+.custom-button {
+    max-width: 250px; /* Adjusted size for better aesthetics */
+    padding: 10px 20px; /* Comfortable padding */
+    font-weight: 500; /* Slightly bold text */
+    border-radius: 8px; /* Rounded corners */
+    transition: all 0.3s ease; /* Smooth hover effects */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+    .custom-button:hover {
+        background-color: #0056b3; /* Slightly darker blue on hover */
+        box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15); /* Enhance shadow on hover */
+    }
+
+/* Info Button Styling */
+.custom-info {
+    max-width: 300px;
+    padding: 10px 20px;
+    background-color: #6c757d; /* Neutral gray for informational text */
+    color: #fff;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+/* Flexbox Row Styling */
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Ensure buttons are spaced evenly */
+    gap: 10px; /* Add space between columns */
+}
+
+/* Adjust for smaller screens */
+@media (max-width: 768px) {
+    .row {
+        flex-wrap: wrap; /* Stack buttons vertically on small screens */
+        justify-content: center; /* Center buttons */
+    }
+
+    .custom-button,
+    .custom-info {
+        width: 100%; /* Full-width on smaller screens */
+        max-width: none;
+    }
+}
+
+

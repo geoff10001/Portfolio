@@ -56,19 +56,26 @@
 <div id="outer">
     <div id="inner">
         <div class="container">
-            <div class="row">
-                <div class="col-sm">
-                    <button class="w-100 btn btn-lg btn-primary input-margin-bottom" style="float: left; max-width:200px;" onclick="toggleFullScreen()">Full Screen</button>
+            <div class="row align-items-center justify-content-between mb-3">
+                <!-- Full Screen Button -->
+                <div class="col-auto">
+                    <button class="btn btn-primary btn-lg custom-button" onclick="toggleFullScreen()">
+                        Full Screen
+                    </button>
                 </div>
+
+                <!-- Last Updated Info -->
                 @using System.Globalization
-                <div class="col-sm">
-                    <div class="w-100 btn btn-lg btn-primary input-margin-bottom">
+                <div class="col-auto text-center">
+                    <div class="btn btn-secondary btn-lg custom-info">
                         Updated: @(lastRefreshDate?.ToString("g", new CultureInfo("en-AU")) ?? "Not available")
                     </div>
                 </div>
-                <div class="col-sm">
-                    <button class="w-100 btn btn-lg btn-primary input-margin-bottom" style="float: right; min-width:200px; max-width:350px;" id="startazure" @onclick="SubmitAzureAsync">
-                        <span class="oi oi-power-standby" style="float: left;margin-right: 10px;" aria-hidden="true"></span>
+
+                <!-- Azure Action Button -->
+                <div class="col-auto">
+                    <button class="btn btn-primary btn-lg custom-button d-flex align-items-center" id="startazure" @onclick="SubmitAzureAsync">
+                        <span class="oi oi-power-standby me-2" aria-hidden="true"></span>
                         @ButtonAzureText
                     </button>
                 </div>
