@@ -1,3 +1,5 @@
+using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Configuration;
 using Portfolio.Api;
 using Portfolio.Api.Repository;
 
@@ -6,6 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddScoped(_ =>
     new ConnectionString(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped(_ =>
+    new SqliteConnection(builder.Configuration.GetConnectionString("SQLiteConnection")));
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMyIdentityRepository, MyIdentityRepository>();
 builder.Services.AddScoped<IPowerBIDataRepository, PowerBIDataRepository>();
 
