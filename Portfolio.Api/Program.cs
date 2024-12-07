@@ -12,6 +12,14 @@ builder.Services.AddScoped(_ =>
 builder.Services.AddScoped(_ =>
     new SqliteConnection(builder.Configuration.GetConnectionString("SQLiteConnection")));
 
+var dbFilePath = builder.DataSource;
+// Ensure the directory exists
+var directory = Path.GetDirectoryName(dbFilePath);
+if (!Directory.Exists(directory))
+{
+    Directory.CreateDirectory(directory);
+}
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMyIdentityRepository, MyIdentityRepository>();
 builder.Services.AddScoped<IPowerBIDataRepository, PowerBIDataRepository>();
@@ -22,6 +30,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Database initialization
+SQLiteDatabaseInitialiser.Initialise(builder.Configuration.GetConnectionString("SQLiteConnection"));
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -37,3 +49,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
